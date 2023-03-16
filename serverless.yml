@@ -1,0 +1,50 @@
+service: aws-ts-file-upload
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  apiGateway:
+    binaryMediaTypes:
+      - "multipart/form-data"
+
+functions:
+  upload:
+    handler: handlers.upload
+    events:
+      - http:
+          method: post
+          path: upload
+          cors: true
+
+resources:
+  Resources:
+    ExampleBucketFileUpload:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: example-bucket-file-upload
+
+    # define a policy for an existing role
+    UploadFilePolicy:
+      Type: AWS::IAM::Policy
+      Properties:
+        PolicyName: UploadObjects
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Sid: LambdaPutObjects
+              Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectTagging
+              Resource:
+                Fn::Join:
+                  - ""
+                  - - "arn:aws:s3:::"
+                    - Ref: ExampleBucketFileUpload
+                    - "/*"
+        Roles:
+          - aws-ts-file-upload-dev-us-east-1-lambdaRole
+
+plugins:
+  - serverless-esbuild
